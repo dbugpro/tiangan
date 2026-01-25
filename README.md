@@ -1,3 +1,5 @@
+## TIANGAN MODULE
+
 <p align="center">
   <strong>A lightweight, extensible Python toolkit for experimentation and rapid prototyping.</strong>
 </p>
@@ -27,7 +29,8 @@
 
 ## 🧭 About
 
-**Tiangan** is a clean, minimal Python package designed as a foundation for experimentation, rapid prototyping, and reusable utilities.  
+**Tiangan** is a clean, minimal Python package designed as a foundation for experimentation, rapid prototyping, and reusable utilities.
+
 It’s intentionally lightweight — giving you a structured, professional starting point for:
 
 - building your own Python toolkit  
@@ -44,10 +47,9 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1EOpO4vTc52o8_fR_9Dgu1_lrHNiFLdyL
 
-## Run Locally
+# Run Locally
 
 **Prerequisites:**  Node.js
-
 
 1. Install dependencies:
    `npm install`
