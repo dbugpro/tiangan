@@ -41,11 +41,11 @@ It’s intentionally lightweight — giving you a structured, professional start
 
 Whether you're exploring ideas, building internal tools, or learning how to publish Python packages, **Tiangan** gives you a solid, elegant base to grow from.
 
-## ✨ Run and deploy your AI Studio app
+## ✨ Run and deploy in the Google AI Studio app
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1EOpO4vTc52o8_fR_9Dgu1_lrHNiFLdyL
+[View your app in AI Studio: https://ai.studio/apps/drive/1EOpO4vTc52o8_fR_9Dgu1_lrHNiFLdyL](https://aistudio.google.com/app/prompts?state=%7B%22ids%22:%5B%221EOpO4vTc52o8_fR_9Dgu1_lrHNiFLdyL%22%5D,%22action%22:%22open%22,%22userId%22:%22104166031493797854549%22,%22resourceKeys%22:%7B%7D%7D&usp=sharing)
 
 ## 🛠 Run Locally
 
