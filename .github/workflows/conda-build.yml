@@ -47,4 +47,3 @@ jobs:
           source $CONDA/etc/profile.d/conda.sh
           conda activate base
           anaconda upload /usr/share/miniconda/conda-bld/noarch/*.tar.bz2 --label main
-
