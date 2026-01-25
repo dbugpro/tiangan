@@ -1,6 +1,48 @@
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+</div
+
+
+
+<p align="center">
+  <strong>A lightweight, extensible Python toolkit for experimentation and rapid prototyping.</strong>
+</p>
+
+<p align="center">
+  <!-- Build & Release -->
+  <img src="https://img.shields.io/github/actions/workflow/status/dbugpro/tiangan/conda-build.yml?branch=main" alt="Build Status">
+  <img src="https://img.shields.io/github/v/release/dbugpro/tiangan" alt="GitHub Release">
+
+  <!-- Conda -->
+  <img src="https://img.shields.io/conda/v/dbx/tiangan" alt="Conda Version">
+  <img src="https://img.shields.io/conda/dn/dbx/tiangan?label=Conda%20installs&color=brightgreen" alt="Conda Installs">
+  <img src="https://img.shields.io/conda/pn/dbx/tiangan" alt="Platforms">
+
+  <!-- GitHub Community -->
+  <img src="https://img.shields.io/github/stars/dbugpro/tiangan?style=social" alt="GitHub Stars">
+  <img src="https://img.shields.io/github/contributors/dbugpro/tiangan" alt="Contributors">
+
+  <!-- License -->
+  <img src="https://img.shields.io/badge/license-Free-blue" alt="License">
+
+  <!-- Optional PyPI badge (activate when published) -->
+  <!-- <img src="https://img.shields.io/pypi/v/tiangan" alt="PyPI Version"> -->
+</p>
+
+---
+
+## 🧭 About
+
+**Tiangan** is a clean, minimal Python package designed as a foundation for experimentation, rapid prototyping, and reusable utilities.  
+It’s intentionally lightweight — giving you a structured, professional starting point for:
+
+- building your own Python toolkit  
+- packaging and distributing code through Conda  
+- experimenting with CI/CD automation  
+- learning modern packaging workflows  
+- extending the project into algorithms, ML helpers, or personal utilities  
+
+Whether you're exploring ideas, building internal tools, or learning how to publish Python packages, **Tiangan** gives you a solid, elegant base to grow from.
 
 # Run and deploy your AI Studio app
 
