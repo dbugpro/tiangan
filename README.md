@@ -28,7 +28,8 @@
 
 ## 🧭 About
 
-**Tiangan** is a clean, minimal Python package designed as a foundation for experimentation, rapid prototyping, and reusable utilities. <br> 
+**Tiangan** is a clean, minimal Python package designed as a foundation for experimentation, rapid prototyping, and reusable utilities.
+
 It’s intentionally lightweight — giving you a structured, professional starting point for:
 
 - building your own Python toolkit  
