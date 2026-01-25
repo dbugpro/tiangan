@@ -38,15 +38,3 @@ It’s intentionally lightweight — giving you a structured, professional start
 - extending the project into algorithms, ML helpers, or personal utilities  
 
 Whether you're exploring ideas, building internal tools, or learning how to publish Python packages, **Tiangan** gives you a solid, elegant base to grow from.
-
----
-
-If you want, I can help you:
-
-- integrate the mini TIANGAN logo into section headers  
-- polish the entire README layout  
-- add a “Why Tiangan?” or “Roadmap” section  
-- generate a CONTRIBUTING.md or CODE_OF_CONDUCT.md  
-- create a footer banner for style and branding  
-
-Just tell me the direction you want to take next.
