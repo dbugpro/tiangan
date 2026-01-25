@@ -1,2 +1,2 @@
 
-export const StatsVisualizer = () => null;
+export {};
