@@ -2,7 +2,7 @@ name: Build and Publish Conda Package
 
 on:
   push:
-    tags:bug
+    tags:
       - "v*"
 
 jobs:
