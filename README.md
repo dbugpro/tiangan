@@ -1,8 +1,5 @@
 ## TIANGAN
 
-`TIANGAN`
-
-
 <strong>A lightweight, extensible Python toolkit for experimentation and rapid prototyping.</strong>
 
 <br>
