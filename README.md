@@ -1,4 +1,4 @@
-## TIANGAN MODULE
+# TIANGAN MODULE
 
 <p align="center">
   <strong>A lightweight, extensible Python toolkit for experimentation and rapid prototyping.</strong>
@@ -41,13 +41,13 @@ It’s intentionally lightweight — giving you a structured, professional start
 
 Whether you're exploring ideas, building internal tools, or learning how to publish Python packages, **Tiangan** gives you a solid, elegant base to grow from.
 
-# Run and deploy your AI Studio app
+## Run and deploy your AI Studio app
 
 This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/drive/1EOpO4vTc52o8_fR_9Dgu1_lrHNiFLdyL
 
-# Run Locally
+## Run Locally
 
 **Prerequisites:**  Node.js
 
