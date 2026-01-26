@@ -1,19 +1,46 @@
-name: Build Conda Package (Docker) and Push Image
+name: Build Conda Package
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 jobs:
-  build:
+  build-conda:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Miniconda
+        uses: conda-incubator/setup-miniconda@v3
         with:
-          fetch-depth: 0
+          auto-update-conda: true
+          python-version: "3.10"
+          activate-environment: build-env
+          environment-file: environment.yml
+          use-mamba: true
+
+      - name: Install conda-build
+        run: |
+          conda install conda-build anaconda-client
+
+      - name: Build Conda package
+        run: |
+          conda-build conda-recipe \
+            --output-folder dist
+
+      - name: Upload Conda package to Anaconda
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+        run: |
+          anaconda upload dist/**/tiangan-*.tar.bz2 --label main --force
+
+      # -----------------------------
+      # Docker build + push section
+      # -----------------------------
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -23,26 +50,19 @@ jobs:
 
       - name: Build Docker image for Conda build
         run: |
-          docker build -f Dockerfile.conda -t dbugpro/tiangan:conda .
+          docker build \
+            -f Dockerfile.conda \
+            -t dbugpro/tiangan:conda .
 
       - name: Push Docker image to Docker Hub
         run: |
           docker push dbugpro/tiangan:conda
 
-      - name: Run Conda build inside Docker
+      # Optional: tag with version
+      - name: Tag image with version
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
-          docker run --rm \
-            -v "${{ github.workspace }}":/workspace \
-            dbugpro/tiangan:conda \
-            conda build recipe --output-folder conda-dist
+          VERSION="${GITHUB_REF#refs/tags/}"
+          docker tag dbugpro/tiangan:conda dbugpro/tiangan:${VERSION}
+          docker push dbugpro/tiangan:${VERSION}
 
-      - name: Upload Conda package to Anaconda
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
-        run: |
-          docker run --rm \
-            -v "${{ github.workspace }}":/workspace \
-            -e ANACONDA_API_TOKEN \
-            dbugpro/tiangan:conda \
-            bash -c "anaconda upload conda-dist/**/tiangan-*.tar.bz2 --label main"
