@@ -1,0 +1,85 @@
+{
+  "glossary": {
+    "version": "0.1.0",
+    "generated_at": "AUTO_TIMESTAMP",
+    "entries": [
+      {
+        "term": "BUGWORLD",
+        "category": "system",
+        "definition": "The conceptual environment in which all Tiangan interactions occur.",
+        "ritual_state": "OFF",
+        "tags": ["environment", "system", "scope"],
+        "safety_notes": "All actions inside BUGWORLD are subject to BIBA/BABI/BABR.",
+        "examples": [
+          "User runs `bugworld enter` to begin operating under BUGWORLD rules."
+        ],
+        "related_terms": ["DBUG IDLE", "BUG SWITCH", "BBC BOOK"]
+      },
+
+      {
+        "term": "DBUG IDLE",
+        "category": "environment",
+        "definition": "The operational environment inside BUGWORLD when the BUG SWITCH is OFF.",
+        "ritual_state": "OFF",
+        "tags": ["environment", "idle", "safe"],
+        "safety_notes": "Only OFF-state rituals may be invoked. BUG SWITCH ON is out-of-bounds.",
+        "examples": [
+          "After entering BUGWORLD, the system announces: 'Environment: DBUG IDLE'."
+        ],
+        "related_terms": ["BUGWORLD", "BUG SWITCH"]
+      },
+
+      {
+        "term": "BIBA",
+        "category": "safety",
+        "definition": "The Best Index of Banned Actions — the global list of forbidden actions.",
+        "ritual_state": "OFF",
+        "tags": ["safety", "banned", "global"],
+        "safety_notes": "BIBA is consulted before any ritual is executed.",
+        "examples": [
+          "A destructive command is blocked because it appears in BIBA."
+        ],
+        "related_terms": ["BABI", "BABR"]
+      },
+
+      {
+        "term": "BABI",
+        "category": "safety",
+        "definition": "Banned Actions by Identity — role-specific forbidden actions.",
+        "ritual_state": "OFF",
+        "tags": ["safety", "identity", "roles"],
+        "safety_notes": "Prevents specific roles from performing restricted actions.",
+        "examples": [
+          "adminx is forbidden from updating BIBA."
+        ],
+        "related_terms": ["BIBA", "BABR"]
+      },
+
+      {
+        "term": "BABR",
+        "category": "safety",
+        "definition": "Banned Actions by Response — filters AI responses before emission.",
+        "ritual_state": "OFF",
+        "tags": ["safety", "ai", "response"],
+        "safety_notes": "All AI responses must pass BABR before being emitted.",
+        "examples": [
+          "A response containing a secret key is blocked by BABR."
+        ],
+        "related_terms": ["BIBA", "BABI"]
+      },
+
+      {
+        "term": "session open",
+        "category": "ritual",
+        "definition": "Start a new DBUG IDLE session and begin logging.",
+        "ritual_state": "OFF",
+        "tags": ["session", "ritual", "start"],
+        "safety_notes": "Session must be opened before roles can be assumed.",
+        "examples": [
+          "User runs `session open` to begin a new interaction."
+        ],
+        "related_terms": ["session close", "role assume"]
+      }
+    ]
+  }
+}
