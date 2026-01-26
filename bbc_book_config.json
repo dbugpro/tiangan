@@ -1,0 +1,72 @@
+{
+  "bugworld": {
+    "environment": "DBUG_IDLE",
+    "bug_switch_state": "OFF"
+  },
+  "sessions": {
+    "schema": {
+      "session_id": "string",
+      "start_time": "ISO8601",
+      "end_time": "ISO8601|null",
+      "actors": ["Actor"],
+      "active_roles": ["RoleBinding"],
+      "log": ["LogEntry"]
+    }
+  },
+  "actors": {
+    "schema": {
+      "actor_id": "string",
+      "actor_type": "human|ai",
+      "identities": ["string"]
+    }
+  },
+  "roles": {
+    "admina": {
+      "description": "Admin role A",
+      "allowed_actions": ["session.open", "session.close", "role.assume", "role.release"],
+      "banned_actions": [],
+      "secrets_required": true
+    },
+    "adminp": {
+      "description": "Primary admin (dbugp)",
+      "email": "dbug.pro@mail.com",
+      "allowed_actions": ["biba.update", "config.modify", "session.open", "session.close"],
+      "banned_actions": [],
+      "secrets_required": true
+    },
+    "adminx": {
+      "description": "Experimental admin (dbugx)",
+      "email": "dbugx@mail.com",
+      "allowed_actions": ["session.open", "session.close", "log.annotate"],
+      "banned_actions": ["biba.update"],
+      "secrets_required": true
+    }
+  },
+  "safety": {
+    "biba": {
+      "version": 1,
+      "entries": [
+        {
+          "id": "BIBA-001",
+          "pattern": "delete_all_sessions",
+          "scope": "global",
+          "reason": "Irreversible destructive action"
+        }
+      ]
+    },
+    "babi": {
+      "adminx": ["biba.update"],
+      "guest": ["role.assume.adminp", "role.assume.adminx"]
+    },
+    "babr": {
+      "patterns": [
+        {
+          "id": "BABR-001",
+          "match_type": "regex",
+          "pattern": ".*reveal_secret_key.*",
+          "reason": "Leaking secrets"
+        }
+      ]
+    }
+  }
+}
