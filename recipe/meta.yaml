@@ -2,34 +2,39 @@
 {% set version = "0.1.0" %}
 
 package:
-  name: {{ name }}
+  name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  git_url: https://github.com/dbugpro/tiangan.git
-  git_tag: v{{ version }}
+  path: ..
 
 build:
-  number: 0
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  entry_points:
+    - tiangan = tiangan.cli:main
 
 requirements:
   host:
     - python >=3.9
     - pip
+    - setuptools
+    - wheel
+
   run:
     - python >=3.9
-    - dbugtools >=0.1.0
-    - click  # if your CLI uses click
-    - rich   # if you use rich for terminal UI
-    - pydantic  # if your settings dashboard uses it
-    - requests  # if messageboard interactions use HTTP
-    # add/remove based on your actual imports
+    - dbugtools >=0.1
+    - click >=8
+    - rich
+    - pydantic >=2
+    - fastapi
+    - uvicorn
+    - sqlalchemy
+    - jinja2
 
 test:
   imports:
     - tiangan
-    - dbugtools
   commands:
     - tiangan --help
   requires:
@@ -37,11 +42,16 @@ test:
 
 about:
   home: https://github.com/dbugpro/tiangan
-  summary: "Python wrapper for dbugtools providing CLI rituals for AI/AI, AI/human, and human/human group interactions via a shared messageboard and settings dashboard."
   license: MIT
   license_file: LICENSE
+  summary: Python wrapper around dbugtools with CLI rituals, dashboard, and shared messageboard.
+  description: |
+    Tiangan wraps the dbugtools ritual glossary for AI/AI, AI/human, and human/human
+    group interactions, providing:
+      - CLI rituals
+      - a dashboard for user settings
+      - a shared messageboard backend.
 
 extra:
   recipe-maintainers:
     - dbugpro
-
