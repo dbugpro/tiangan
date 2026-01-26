@@ -1,0 +1,12 @@
+FROM mambaorg/micromamba:latest
+
+# Create a dedicated environment for building tiangan
+RUN micromamba install -y -n build-env conda-build anaconda-client python=3.11 \
+    && micromamba clean --all --yes
+
+# Set environment
+ENV MAMBA_DOCKERFILE_ACTIVATE=1
+SHELL ["micromamba", "run", "-n", "build-env", "/bin/bash", "-c"]
+
+# Default working directory
+WORKDIR /workspace
