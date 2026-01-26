@@ -38,7 +38,7 @@ jobs:
         run: |
           source $CONDA/etc/profile.d/conda.sh
           conda activate base
-          conda build .
+          conda build recipe
 
       - name: Upload to Anaconda
         env:
