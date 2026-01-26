@@ -1,12 +1,18 @@
-FROM mambaorg/micromamba:latest
+FROM mambaorg/micromamba:1.5.8
 
-# Create a dedicated environment for building tiangan
-RUN micromamba install -y -n build-env conda-build anaconda-client python=3.11 \
-    && micromamba clean --all --yes
+# Create a dedicated env for building tiangan
+ARG MAMBA_DOCKERFILE_ACTIVATE=1
+ENV CONDA_ENV=tiangan-build
 
-# Set environment
-ENV MAMBA_DOCKERFILE_ACTIVATE=1
-SHELL ["micromamba", "run", "-n", "build-env", "/bin/bash", "-c"]
-
-# Default working directory
+# Copy recipe and project
 WORKDIR /workspace
+COPY conda-recipe/ conda-recipe/
+COPY . .
+
+# Install build tooling
+RUN micromamba create -y -n ${CONDA_ENV} python=3.10 conda-build anaconda-client pip && \
+    micromamba clean -a -y
+
+# Default command: build the conda package
+CMD ["bash", "-lc", "conda-build conda-recipe --output-folder dist"]
+
