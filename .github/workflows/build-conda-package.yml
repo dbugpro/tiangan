@@ -1,4 +1,4 @@
-name: Build and Publish Conda Package
+name: Build Conda Package (Docker) and Push Image
 
 on:
   push:
@@ -15,25 +15,34 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install micromamba
-        uses: mamba-org/provision-with-micromamba@v15
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
         with:
-          micromamba-version: "latest"
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Create build environment
+      - name: Build Docker image for Conda build
         run: |
-          micromamba create -y -n build-env conda-build anaconda-client python=3.11
-          micromamba activate build-env
+          docker build -f Dockerfile.conda -t dbugpro/tiangan:conda .
 
-      - name: Build Conda package
+      - name: Push Docker image to Docker Hub
         run: |
-          micromamba activate build-env
-          conda build recipe --output-folder conda-dist
+          docker push dbugpro/tiangan:conda
 
-      - name: Upload to Anaconda
+      - name: Run Conda build inside Docker
+        run: |
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            dbugpro/tiangan:conda \
+            conda build recipe --output-folder conda-dist
+
+      - name: Upload Conda package to Anaconda
         if: startsWith(github.ref, 'refs/tags/v')
         env:
           ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
         run: |
-          micromamba activate build-env
-          anaconda upload conda-dist/**/tiangan-*.tar.bz2 --label main
+          docker run --rm \
+            -v "${{ github.workspace }}":/workspace \
+            -e ANACONDA_API_TOKEN \
+            dbugpro/tiangan:conda \
+            bash -c "anaconda upload conda-dist/**/tiangan-*.tar.bz2 --label main"
