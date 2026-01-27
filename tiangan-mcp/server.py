@@ -1,27 +1,8 @@
-from mcp.server import Server
-from mcp.types import TextContent, Tool
+from fastmcp import FastMCP
+from tools.release_notes import generate_release_notes
 
-async def hello(name: str):
-    return TextContent(f"Hello, {name}! This is Tiangan MCP.")
+app = FastMCP("tiangan-mcp")
 
-server = Server(
-    name="tiangan-mcp",
-    tools=[
-        Tool(
-            name="hello",
-            description="Say hello",
-            input_schema={
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"}
-                },
-                "required": ["name"]
-            },
-            handler=hello,
-        )
-    ],
-)
+app.add_tool(generate_release_notes)
 
-if __name__ == "__main__":
-    server.run()
-
+app.run()
