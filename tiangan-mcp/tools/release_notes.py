@@ -16,4 +16,3 @@ class GenerateReleaseNotes(MCPTool):
             return f"Release notes since {tag}:\n\n{output}"
         except Exception as e:
             return f"Error generating release notes: {e}"
-
