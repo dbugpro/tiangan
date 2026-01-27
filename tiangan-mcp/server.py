@@ -1,8 +1,8 @@
 from fastmcp import FastMCP
-from tools.release_notes import generate_release_notes
+from tools.release_notes import GenerateReleaseNotes
 
 app = FastMCP("tiangan-mcp")
 
-app.add_tool(generate_release_notes)
+app.add_tool(GenerateReleaseNotes())
 
 app.run()
