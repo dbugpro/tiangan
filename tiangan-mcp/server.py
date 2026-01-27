@@ -10,7 +10,13 @@ server = Server(
         Tool(
             name="hello",
             description="Say hello",
-            input_schema={"type": "object", "properties": {"name": {"type": "string"}}},
+            input_schema={
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"}
+                },
+                "required": ["name"]
+            },
             handler=hello,
         )
     ],
