@@ -1,0 +1,9 @@
+{
+  "name": "tiangan-mcp",
+  "version": "1.0",
+  "tools": [
+    "generate_release_notes",
+    "list_unity_projects",
+    "list_unity_environments"
+  ]
+}

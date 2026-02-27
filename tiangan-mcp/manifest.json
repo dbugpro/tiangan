@@ -1,0 +1,51 @@
+{
+  "name": "tiangan-mcp",
+  "version": "1.0.0",
+  "description": "Tiangan MCP server providing Cloud Code, Cloud Save, and UGS REST integrations.",
+  "entrypoint": "server.py",
+  "runtime": {
+    "language": "python",
+    "version": "3.10",
+    "dependencies": [
+      "fastmcp>=2.0.0",
+      "aiohttp>=3.9.0"
+    ]
+  },
+  "tools": [
+    {
+      "name": "run_cloud_code",
+      "description": "Execute a Cloud Code script (mock for now, real REST once IAM is fixed).",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "script_name": { "type": "string" },
+          "params": { "type": "object" }
+        },
+        "required": ["script_name", "params"]
+      }
+    },
+    {
+      "name": "cloud_save_set",
+      "description": "Set a Cloud Save key/value pair using UGS REST.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" },
+          "value": { "type": "object" }
+        },
+        "required": ["key", "value"]
+      }
+    },
+    {
+      "name": "cloud_save_get",
+      "description": "Retrieve a Cloud Save key/value pair using UGS REST.",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string" }
+        },
+        "required": ["key"]
+      }
+    }
+  ]
+}
