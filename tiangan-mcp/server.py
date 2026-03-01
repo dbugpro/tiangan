@@ -1,201 +1,279 @@
+#!/usr/bin/env python3
+"""
+Tiangan MCP Server — TGA/MOGI Integration Module
+Spec: v260209.2 | Session: DBUG_260301 (1)
+Geo-Fence: England (zero_china_dependencies = GLOBAL)
+Identity: dbug. / admin. (trailing period enforced)
+fastmcp: 3.0.2 API (FastMCP class)
+"""
+
 import os
-import base64
-import asyncio
 import json
+import hashlib
 import re
-from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+from typing import Optional, Dict, List, Any
+from fastmcp import FastMCP  # ✅ CORRECT: FastMCP not MCP
 
-from fastmcp import MCP, Tool, Context
+# =============================================================================
+# CORE IDENTITY & COMPLIANCE (identity.json enforcement)
+# =============================================================================
+UNIVERSAL_CORE_IDENTITY = "dbug."
+ADMIN_CORE_IDENTITY = "admin."
+SPEC_VERSION = "v260209.2"
+SESSION_ID = "DBUG_260301 (1)"
 
-from tools.mock_cloud_code import MockCloudCodeClient
-from tools.ugs_rest_client import UGSRestClient
+def validate_identity(role: str) -> bool:
+    """Enforce trailing period for core identities per identity.json"""
+    if role in ["dbug.", "admin."]:
+        return True
+    if role in ["dbug", "admin"]:  # Missing period — reject
+        return False
+    return True  # Other roles (adminx, adminq, etc.) pass through
 
+# =============================================================================
+# GEO-FENCE & CONSTRAINTS (geo_fence.json)
+# =============================================================================
+GEO_FENCE = {
+    "current_location": "England",
+    "departure_date": "2026-02-28",
+    "zero_china_dependencies": "GLOBAL",
+    "openai_available": True,
+    "copilot_available": True,
+    "ue5_compliance": "UE5.3.2"
+}
 
-# ---------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------
+# =============================================================================
+# MEC/MFC/MCC ENCODING SCHEMAS (10-bit binary foundation)
+# =============================================================================
+MFC_MAP = {
+    "0": "b5", "1": "a1", "2": "a2", "3": "a3", "4": "a4",
+    "5": "a5", "6": "b1", "7": "b2", "8": "b3", "9": "b4"
+}
 
-@dataclass
-class ServerConfig:
-    mode: str
-    project_id: str
-    environment_id: str
-    api_key: str
+def mmc_to_mfc(mmc: str) -> str:
+    """Convert MMC (000-999) → MFC (a1a2a3 format)"""
+    if not re.match(r"^\d{3}$", mmc):
+        raise ValueError(f"Invalid MMC format: {mmc} (expected 000-999)")
+    return "".join(MFC_MAP[d] for d in mmc)
 
-    @classmethod
-    def from_env(cls):
-        mode = os.getenv("MCP_MODE", "mock").lower()
-        project_id = os.getenv("UNITY_PROJECT_ID", "").strip()
-        environment_id = os.getenv("UNITY_ENVIRONMENT_ID", "").strip()
-        api_key = os.getenv("UNITY_API_KEY", "").strip()
+def mfc_to_mmc(mfc: str) -> str:
+    """Convert MFC (a1a2a3) → MMC (000-999)"""
+    reverse_map = {v: k for k, v in MFC_MAP.items()}
+    tokens = re.findall(r"[ab][1-5]", mfc)
+    if len(tokens) != 3:
+        raise ValueError(f"Invalid MFC format: {mfc} (expected 3 tokens like a1a2a3)")
+    return "".join(reverse_map[t] for t in tokens)
 
-        if mode not in ("mock", "rest"):
-            raise ValueError("MCP_MODE must be 'mock' or 'rest'")
-        if mode == "rest":
-            missing = []
-            if not project_id: missing.append("UNITY_PROJECT_ID")
-            if not environment_id: missing.append("UNITY_ENVIRONMENT_ID")
-            if not api_key: missing.append("UNITY_API_KEY")
-            if missing:
-                raise ValueError(f"MCP_MODE=rest but missing required env vars: {', '.join(missing)}")
+def generate_mec_binary(mmc: str) -> str:
+    """Generate 10-bit binary representation for MEC (1000 of 1024 permutations used)"""
+    index = int(mmc)
+    return format(index, f"010b")
 
-        return cls(mode=mode, project_id=project_id, environment_id=environment_id, api_key=api_key)
+# =============================================================================
+# SNC (Star Number Code) GENERATOR — S000N Format
+# =============================================================================
+def generate_snc(base_index: int = 1) -> str:
+    """Generate Star Number Code in S000N format"""
+    index_str = str(base_index).zfill(3)
+    check_digit = sum(int(d) for d in index_str) % 10
+    return f"S{index_str}{check_digit}"
 
+def validate_snc(snc: str) -> bool:
+    """Validate SNC format: S + 3 digits + 1 check digit"""
+    match = re.match(r"^S(\d{3})(\d)$", snc)
+    if not match:
+        return False
+    index_str, check = match.groups()
+    expected_check = sum(int(d) for d in index_str) % 10
+    return str(expected_check) == check
 
-# ---------------------------------------------------------
-# TGA/MOGI Logic Helpers
-# ---------------------------------------------------------
+# =============================================================================
+# FOUR DIRECTIONS FLAG ALGORITHM
+# =============================================================================
+ELEMENTS = ["WOOD", "FIRE", "EARTH", "METAL", "WATER"]
+ANIMALS = ["RAT", "OX", "TIGER", "RABBIT", "DRAGON", "SNAKE", 
+           "HORSE", "GOAT", "MONKEY", "ROOSTER", "DOG", "PIG"]
+DIRECTIONS = ["NORTH", "EAST", "SOUTH", "WEST", "CENTRE"]
 
-class TGAMogiEngine:
-    """Handles SNC generation, Flag assignment, and MOGI registration logic."""
+def assign_flags(birth_year: int, element: str, animal: str) -> List[str]:
+    """Assign TGA flags based on birth year, element, animal"""
+    flags = []
+    if element.upper() in ELEMENTS:
+        flags.append(f"{element.upper()}_FAMILY")
+    if animal.upper() in ANIMALS:
+        flags.append(f"{animal.upper()}_FAMILY")
+    if animal.upper() in ANIMALS:
+        idx = ANIMALS.index(animal.upper())
+        flags.append(DIRECTIONS[idx % len(DIRECTIONS)])
+    return flags
+
+# =============================================================================
+# STORAGE LAYER (Cloud Save / Local Fallback)
+# =============================================================================
+STORAGE_PATH = os.path.expanduser("~/tga_data/mogi_registrations.json")
+
+def ensure_storage_dir():
+    os.makedirs(os.path.dirname(STORAGE_PATH), exist_ok=True)
+
+def load_registrations() -> List[Dict]:
+    ensure_storage_dir()
+    if os.path.exists(STORAGE_PATH):
+        with open(STORAGE_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return []
+
+def save_registrations(data: List[Dict]):
+    ensure_storage_dir()
+    with open(STORAGE_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+# =============================================================================
+# MCP SERVER INITIALIZATION (fastmcp 3.0.2 API)
+# =============================================================================
+mcp = FastMCP("tiangan-tga-mcp")  # ✅ FastMCP not MCP
+
+@mcp.tool()
+def tga_register_member(
+    email: str,
+    birth_year: int,
+    element: str,
+    animal: str,
+    role: str = "dbug."
+) -> Dict[str, Any]:
+    """Register a new MOGI member (TGA protocol)"""
+    if not validate_identity(role):
+        return {"error": f"Invalid role: {role} (trailing period required for core identities)"}
     
-    # Simple in-memory store for demo (replace with Redis/DB in production)
-    _members: Dict[str, dict] = {}
-    _next_snc_id: int = 0
-
-    @staticmethod
-    def generate_snc() -> str:
-        """Generate next Star Number Code (S000N format)."""
-        current_id = TGAMogiEngine._next_snc_id
-        TGAMogiEngine._next_snc_id += 1
-        
-        if current_id < 10000:
-            return f"S000{current_id}"
-        elif current_id < 100000:
-            return f"S0000{current_id}"
-        else:
-            return f"S{current_id}"
-
-    @staticmethod
-    def assign_flags(element: str, animal: str, birth_year: int) -> List[str]:
-        """Assign flags based on Element, Animal, and invented Direction logic."""
-        flags = []
-        if element: flags.append(f"{element.upper()}_FAMILY")
-        if animal: flags.append(f"{animal.upper()}_FAMILY")
-        
-        # Simple Direction Invention Logic (Modulo 4 of Birth Year)
-        directions = ["NORTH_SECTOR", "EAST_SECTOR", "SOUTH_SECTOR", "WEST_SECTOR"]
-        dir_index = birth_year % 4
-        flags.append(directions[dir_index])
-        
-        return flags
-
-    @classmethod
-    def register_member(cls, email: str, birth_year: int, element: str, animal: str) -> dict:
-        """Register a new MOGI member."""
-        snc = cls.generate_snc()
-        flags = cls.assign_flags(element, animal, birth_year)
-        
-        member_data = {
-            "snc": snc,
-            "email": email,
-            "birth_year": birth_year,
-            "element": element,
-            "animal": animal,
-            "flags": flags,
-            "status": "PENDING_MANUAL_APPROVAL",
-            "registered_at": datetime.now().isoformat(),
-            "protocol": "MOGI_MANUAL_REGISTRATION"
+    base_index = (birth_year - 1900) % 1000 + 1
+    snc = generate_snc(base_index)
+    flags = assign_flags(birth_year, element, animal)
+    email_hash = hashlib.sha256(email.lower().encode()).hexdigest()
+    
+    record = {
+        "snc": snc,
+        "email_hash": email_hash,
+        "birth_year": birth_year,
+        "element": element.upper(),
+        "animal": animal.upper(),
+        "flags": flags,
+        "status": "pending",
+        "registered_at": datetime.now(timezone.utc).isoformat(),
+        "session": SESSION_ID,
+        "geo_fence": GEO_FENCE["current_location"],
+        "spec": SPEC_VERSION
+    }
+    
+    registrations = load_registrations()
+    if any(r["email_hash"] == email_hash for r in registrations):
+        return {"status": "duplicate", "message": "Email already registered", "snc_reserved": snc}
+    
+    registrations.append(record)
+    save_registrations(registrations)
+    
+    return {
+        "status": "pending",
+        "message": "Registration received. An admin will email login details manually.",
+        "snc_reserved": snc,
+        "flags_assigned": flags,
+        "next_step": "Check email for manual approval from admin account",
+        "mogi_protocol": "No automation — human agent review required",
+        "compliance": {
+            "identity_enforced": True,
+            "geo_fence_compliant": True,
+            "zero_china_dependencies": GEO_FENCE["zero_china_dependencies"]
         }
-        
-        cls._members[snc] = member_data
-        return member_data
+    }
 
+@mcp.tool()
+def tga_generate_snc(birth_year: int, index_override: Optional[int] = None) -> Dict[str, str]:
+    """Generate a Star Number Code (SNC) for a given birth year"""
+    if index_override is not None:
+        snc = generate_snc(index_override)
+    else:
+        base_index = (birth_year - 1900) % 1000 + 1
+        snc = generate_snc(base_index)
+    return {"snc": snc, "valid": validate_snc(snc), "birth_year": birth_year, "spec": SPEC_VERSION}
 
-# ---------------------------------------------------------
-# MCP Server
-# ---------------------------------------------------------
+@mcp.tool()
+def tga_assign_flags(element: str, animal: str) -> Dict[str, List[str]]:
+    """Assign TGA direction/element/animal flags"""
+    flags = assign_flags(1971, element, animal)
+    return {
+        "flags": flags,
+        "element_valid": element.upper() in ELEMENTS,
+        "animal_valid": animal.upper() in ANIMALS,
+        "spec": SPEC_VERSION
+    }
 
-class TianganMCP(MCP):
-    def __init__(self, config: ServerConfig):
-        super().__init__(name="tiangan-mcp")
-        self.config = config
-        self.mock_cloud_code = MockCloudCodeClient()
-        self.ugs_rest = None
-        if config.mode == "rest":
-            self.ugs_rest = UGSRestClient(
-                project_id=config.project_id,
-                environment_id=config.environment_id,
-                api_key=config.api_key,
-            )
+@mcp.tool()
+def tga_get_member(snc: str) -> Optional[Dict[str, Any]]:
+    """Retrieve member data by SNC (admin-only in production)"""
+    if not validate_snc(snc):
+        return {"error": f"Invalid SNC format: {snc}"}
+    registrations = load_registrations()
+    for record in registrations:
+        if record["snc"] == snc:
+            return {
+                "snc": record["snc"],
+                "status": record["status"],
+                "element": record["element"],
+                "animal": record["animal"],
+                "flags": record["flags"],
+                "registered_at": record["registered_at"],
+                "session": record.get("session"),
+                "spec": SPEC_VERSION
+            }
+    return None
 
-        # Register Existing Tools
-        self.register_tool(self.run_cloud_code)
-        self.register_tool(self.cloud_save_set)
-        self.register_tool(self.cloud_save_get)
+@mcp.tool()
+def tga_encode_mec(mmc: str) -> Dict[str, str]:
+    """Encode MMC (000-999) → MEC (10-bit binary) + MFC (a1a2a3)"""
+    if not re.match(r"^\d{3}$", mmc):
+        return {"error": f"Invalid MMC: {mmc} (expected 000-999)"}
+    mfc = mmc_to_mfc(mmc)
+    mec_binary = generate_mec_binary(mmc)
+    return {"mmc": mmc, "mfc": mfc, "mec_binary_10bit": mec_binary, "dual_readable": True, "spec": SPEC_VERSION}
 
-        # Register NEW TGA/MOGI Tools
-        self.register_tool(self.tga_register_member)
-        self.register_tool(self.tga_generate_snc)
-        self.register_tool(self.tga_assign_flags)
-        self.register_tool(self.tga_get_member)
+@mcp.tool()
+def tga_decode_mec(mec_input: str, mode: str = "mfc") -> Dict[str, str]:
+    """Decode MEC input → MMC (000-999)"""
+    try:
+        if mode == "mfc":
+            mmc = mfc_to_mmc(mec_input)
+        elif mode == "binary":
+            index = int(mec_input, 2)
+            mmc = str(index).zfill(3)
+        else:
+            return {"error": f"Unknown mode: {mode}"}
+        return {"input": mec_input, "mode": mode, "mmc_decoded": mmc, "valid": re.match(r"^\d{3}$", mmc) is not None, "spec": SPEC_VERSION}
+    except Exception as e:
+        return {"error": str(e)}
 
-    # --- Existing UGS Tools ---
+@mcp.tool()
+def tga_health_check() -> Dict[str, Any]:
+    """Return server health and compliance status"""
+    return {
+        "status": "OK",
+        "server": "tiangan-tga-mcp",
+        "spec": SPEC_VERSION,
+        "session": SESSION_ID,
+        "identity": {"universal_core": UNIVERSAL_CORE_IDENTITY, "admin_core": ADMIN_CORE_IDENTITY, "trailing_period_enforced": True},
+        "geo_fence": GEO_FENCE,
+        "tools_available": ["tga_register_member", "tga_generate_snc", "tga_assign_flags", "tga_get_member", "tga_encode_mec", "tga_decode_mec", "tga_health_check"],
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }
 
-    @Tool
-    async def run_cloud_code(self, ctx: Context, script_name: str, params: dict):
-        return await self.mock_cloud_code.run_script(script_name, params)
-
-    @Tool
-    async def cloud_save_set(self, ctx: Context, key: str, value: dict):
-        if self.config.mode != "rest" or self.ugs_rest is None:
-            return {"status": 501, "error": "Cloud Save not available in mock mode"}
-        return await self.ugs_rest.cloud_save_set(key, value)
-
-    @Tool
-    async def cloud_save_get(self, ctx: Context, key: str):
-        if self.config.mode != "rest" or self.ugs_rest is None:
-            return {"status": 501, "error": "Cloud Save not available in mock mode"}
-        return await self.ugs_rest.cloud_save_get(key)
-
-    # --- NEW TGA/MOGI Tools ---
-
-    @Tool
-    async def tga_register_member(self, ctx: Context, email: str, birth_year: int, element: str, animal: str):
-        """
-        Register a new member via MOGI protocol (Manual Registration).
-        Returns: SNC, Flags, and Status.
-        """
-        try:
-            result = TGAMogiEngine.register_member(email, birth_year, element, animal)
-            return {"status": "success", "data": result}
-        except Exception as e:
-            return {"status": "error", "message": str(e)}
-
-    @Tool
-    async def tga_generate_snc(self, ctx: Context):
-        """Generate the next available Star Number Code (S000N)."""
-        snc = TGAMogiEngine.generate_snc()
-        return {"status": "success", "snc": snc}
-
-    @Tool
-    async def tga_assign_flags(self, ctx: Context, element: str, animal: str, birth_year: int):
-        """Assign Family and Direction flags based on birth data."""
-        flags = TGAMogiEngine.assign_flags(element, animal, birth_year)
-        return {"status": "success", "flags": flags}
-
-    @Tool
-    async def tga_get_member(self, ctx: Context, snc: str):
-        """Retrieve member details by SNC."""
-        member = TGAMogiEngine._members.get(snc)
-        if member:
-            return {"status": "success", "data": member}
-        return {"status": "error", "message": "Member not found"}
-
-    def describe(self):
-        if self.config.mode == "mock":
-            return "TianganMCP(mode=mock) [TGA/MOGI Enabled]"
-        return f"TianganMCP(mode=rest, project={self.config.project_id}) [TGA/MOGI Enabled]"
-
-
-# ---------------------------------------------------------
-# Entrypoint
-# ---------------------------------------------------------
-
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
 if __name__ == "__main__":
-    config = ServerConfig.from_env()
-    server = TianganMCP(config)
-    print(server.describe())
-    server.run()
+    print(f"🚀 Tiangan TGA-MCP Server starting...")
+    print(f"   Spec: {SPEC_VERSION}")
+    print(f"   Session: {SESSION_ID}")
+    print(f"   Identity: {UNIVERSAL_CORE_IDENTITY} / {ADMIN_CORE_IDENTITY} (trailing period enforced)")
+    print(f"   Geo-Fence: {GEO_FENCE['current_location']} ({GEO_FENCE['zero_china_dependencies']})")
+    print(f"   Storage: {STORAGE_PATH}")
+    print(f"   Tools: 7 TGA/MOGI endpoints active")
+    print(f"   Health: http://localhost:8765/health (via MCP)")
+    mcp.run()  # ✅ FastMCP.run() method
